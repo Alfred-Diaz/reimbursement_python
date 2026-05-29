@@ -4,6 +4,7 @@ import uuid
 import streamlit as st
 
 from api_client import fetch_api_rows, load_api_config, save_api_config
+from auth import is_admin, login_form, logout_button
 from constants import OUTPUT_DIR, TEMPLATE_PATH, UPLOAD_DIR
 from excel_writer import write_clean_output
 from file_reader import read_input_file
@@ -63,6 +64,10 @@ def upload_tab():
 
 
 def api_tab():
+    if not is_admin():
+        st.error("You do not have permission to access API settings.")
+        return
+
     config = load_api_config()
 
     st.caption(
@@ -131,6 +136,11 @@ def main():
         "Validate, clean, and export reimbursement data into the required BDO upload template."
     )
 
+    if not login_form():
+        return
+
+    logout_button()
+
     if not os.path.exists(TEMPLATE_PATH):
         st.error("Missing reference/bdo_template.xlsm in the GitHub repository.")
         return
@@ -138,13 +148,15 @@ def main():
     os.makedirs(UPLOAD_DIR, exist_ok=True)
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-    tab_upload, tab_api = st.tabs(["Upload File", "Smartsheet/API"])
-
-    with tab_upload:
+    if is_admin():
+        tab_upload, tab_api = st.tabs(["Upload File", "Smartsheet/API"])
+        with tab_upload:
+            upload_tab()
+        with tab_api:
+            api_tab()
+    else:
+        st.subheader("Upload File")
         upload_tab()
-
-    with tab_api:
-        api_tab()
 
 
 main()
