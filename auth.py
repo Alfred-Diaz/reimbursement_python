@@ -15,22 +15,32 @@ def get_secret(name, default=""):
         return os.environ.get(name, default)
 
 
-def secrets_configured():
-    admin_password = get_secret("ADMIN_PASSWORD", "")
-    user_password = get_secret("USER_PASSWORD", "")
-    return bool(admin_password and user_password)
+def get_users_from_list_secrets():
+    try:
+        users_list = st.secrets.get("users", [])
+    except Exception:
+        users_list = []
+
+    users = {}
+    for item in users_list:
+        username = str(item.get("username", "")).strip()
+        password = str(item.get("password", ""))
+        role = str(item.get("role", "user")).strip().lower()
+
+        if not username or not password:
+            continue
+        if role not in {"admin", "user"}:
+            role = "user"
+
+        users[username] = {
+            "password": password,
+            "role": role,
+        }
+
+    return users
 
 
-def using_default_passwords():
-    admin_password = get_secret("ADMIN_PASSWORD", DEFAULT_ADMIN_PASSWORD)
-    user_password = get_secret("USER_PASSWORD", DEFAULT_USER_PASSWORD)
-    return (
-        admin_password == DEFAULT_ADMIN_PASSWORD
-        or user_password == DEFAULT_USER_PASSWORD
-    )
-
-
-def get_users():
+def get_users_from_legacy_secrets():
     admin_username = get_secret("ADMIN_USERNAME", DEFAULT_ADMIN_USERNAME)
     admin_password = get_secret("ADMIN_PASSWORD", DEFAULT_ADMIN_PASSWORD)
     user_username = get_secret("USER_USERNAME", DEFAULT_USER_USERNAME)
@@ -46,6 +56,32 @@ def get_users():
             "role": "user",
         },
     }
+
+
+def get_users():
+    users = get_users_from_list_secrets()
+    if users:
+        return users
+    return get_users_from_legacy_secrets()
+
+
+def secrets_configured():
+    if get_users_from_list_secrets():
+        return True
+
+    admin_password = get_secret("ADMIN_PASSWORD", "")
+    user_password = get_secret("USER_PASSWORD", "")
+    return bool(admin_password and user_password)
+
+
+def using_default_passwords():
+    users = get_users()
+    for user in users.values():
+        if user.get("password") == DEFAULT_ADMIN_PASSWORD:
+            return True
+        if user.get("password") == DEFAULT_USER_PASSWORD:
+            return True
+    return False
 
 
 def init_auth_state():
@@ -68,7 +104,7 @@ def login_form():
 
     if not secrets_configured():
         st.warning(
-            "Login secrets are not fully configured. Set ADMIN_USERNAME, ADMIN_PASSWORD, USER_USERNAME, and USER_PASSWORD in Streamlit Secrets."
+            "Login secrets are not fully configured. Add [[users]] entries in Streamlit Secrets."
         )
 
     if using_default_passwords():
