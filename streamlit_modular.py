@@ -22,6 +22,23 @@ def download_file_button(label, output_path, key):
         )
 
 
+def render_output_section(title, row_count, errors, output_path, button_label, button_key):
+    st.divider()
+    st.subheader(title)
+    st.metric("Rows Routed", row_count)
+
+    if errors:
+        st.warning("Please review the notes below before downloading the file.")
+        st.dataframe(errors[:50], use_container_width=True)
+    else:
+        st.info("No validation notes for this output.")
+
+    if output_path:
+        download_file_button(button_label, output_path, button_key)
+    else:
+        st.caption("No downloadable file was generated for this output.")
+
+
 def show_routed_results(cleaned_rows, error_rows, unmatched, outputs):
     st.success("Processing complete.")
 
@@ -37,28 +54,35 @@ def show_routed_results(cleaned_rows, error_rows, unmatched, outputs):
     if unmatched:
         st.warning("Unmatched input columns: " + ", ".join(unmatched))
 
-    if outputs.get("non_bdo_output_path"):
-        download_file_button(
+    for warning in outputs.get("warnings", []):
+        st.warning(warning)
+
+    non_bdo_errors = outputs.get("non_bdo_errors", [])
+    bdo_errors = outputs.get("bdo_errors", [])
+
+    if outputs.get("non_bdo_rows", 0):
+        render_output_section(
+            "Non-BDO Upload File",
+            outputs.get("non_bdo_rows", 0),
+            non_bdo_errors,
+            outputs.get("non_bdo_output_path"),
             "Download Non-BDO Upload File",
-            outputs["non_bdo_output_path"],
             "download_non_bdo",
         )
 
-    if outputs.get("bdo_output_path"):
-        download_file_button(
+    if outputs.get("bdo_rows", 0):
+        render_output_section(
+            "BDO ACA Upload File",
+            outputs.get("bdo_rows", 0),
+            bdo_errors,
+            outputs.get("bdo_output_path"),
             "Download BDO ACA Upload File",
-            outputs["bdo_output_path"],
             "download_bdo_aca",
         )
 
     if error_rows:
-        st.subheader("Validation Error Preview")
-        st.dataframe(error_rows[:50], use_container_width=True)
-
-    bdo_errors = outputs.get("bdo_errors", [])
-    if bdo_errors:
-        st.subheader("BDO ACA Validation Notes")
-        st.dataframe(bdo_errors[:50], use_container_width=True)
+        with st.expander("View All Validation Errors"):
+            st.dataframe(error_rows[:100], use_container_width=True)
 
 
 def process_rows(rows, source_name):
