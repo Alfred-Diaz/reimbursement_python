@@ -1,0 +1,10 @@
+{
+  "api_url": "https://api.smartsheet.com/2.0/sheets/1147767652044676",
+  "method": "GET",
+  "auth_type": "bearer",
+  "bearer_token": "72g39G1EnBuObaqeodHaF7XwmZGlYfAPf42RT",
+  "basic_username": "",
+  "basic_password": "",
+  "custom_headers": "[\r\n  \"Amount\",\r\n  \"Type of Beneficiary\",\r\n  \"Beneficiary First Name\",\r\n  \"Beneficiary Middle Name\",\r\n  \"Beneficiary Last Name or Corporate Beneficiary Name\",\r\n  \"Beneficiary Address 1\",\r\n  \"Beneficiary Address 2\",\r\n  \"Beneficiary Address 3\",\r\n  \"Account Number\",\r\n  \"Beneficiary Bank\",\r\n  \"Beneficiary Bank Address\",\r\n  \"Beneficiary Information\",\r\n  \"Bank to Bank Information\",\r\n  \"Purpose Code\",\r\n  \"Nature of Transfer\",\r\n  \"Swift Code\",\r\n  \"Country of Destination\",\r\n  \"Importers Code\",\r\n  \"Routing Number\",\r\n  \"RTGS Purpose Code\"\r\n]",
+  "json_data_path": ""
+}

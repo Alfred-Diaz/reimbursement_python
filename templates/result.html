@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Validation Result</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <main class="card wide">
+    <h1>Validation Complete</h1>
+    <div class="stats">
+      <div><strong>{{ total }}</strong><span>Total rows</span></div>
+      <div><strong>{{ ready }}</strong><span>Ready rows</span></div>
+      <div><strong>{{ errors }}</strong><span>Rows with errors</span></div>
+    </div>
+
+    <a class="button" href="{{ url_for('download', filename=download_name) }}">Download cleaned BDO file</a>
+    <a class="link" href="{{ url_for('index') }}">Validate another file</a>
+
+    {% if unmatched %}
+      <div class="warning">
+        <strong>Unmatched input columns:</strong>
+        <p>{{ unmatched|join(', ') }}</p>
+      </div>
+    {% endif %}
+
+    {% if error_preview %}
+      <section>
+        <h2>First errors found</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Source Row</th><th>Errors</th><th>Name / Company</th><th>Bank</th><th>Account</th></tr></thead>
+            <tbody>
+              {% for err in error_preview %}
+              <tr>
+                <td>{{ err['Source Row'] }}</td>
+                <td>{{ err['Errors'] }}</td>
+                <td>{{ err['Beneficiary Last Name or Corporate Beneficiary Name'] }}</td>
+                <td>{{ err['Beneficiary Bank'] }}</td>
+                <td>{{ err['Beneficiary Account Number'] }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    {% endif %}
+  </main>
+</body>
+</html>

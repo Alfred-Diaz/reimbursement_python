@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BDO Reimbursement Cleanup</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <main class="card">
+    <h1>BDO Reimbursement Cleanup</h1>
+    <p class="sub">Clean and validate reimbursement data before generating the BDO-ready .xlsm file. You can either upload a file or pull data from a configured API.</p>
+
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}<div class="alert">{{ messages[0] }}</div>{% endif %}
+    {% endwith %}
+
+    <div class="tabs">
+      <button class="tab active" type="button" onclick="showPanel('upload')">Upload File</button>
+      <button class="tab" type="button" onclick="showPanel('api')">Use API</button>
+      <button class="tab" type="button" onclick="showPanel('config')">API Config</button>
+    </div>
+
+    <section id="panel-upload" class="panel active-panel">
+      <form action="{{ url_for('validate') }}" method="post" enctype="multipart/form-data">
+        <label for="file">Upload reimbursement file</label>
+        <input id="file" name="file" type="file" accept=".csv,.xlsx,.xlsm" required>
+        <button type="submit">Validate & Generate BDO File</button>
+      </form>
+    </section>
+
+    <section id="panel-api" class="panel">
+      <form action="{{ url_for('validate_api') }}" method="post">
+        <h2>Pull from configured API</h2>
+        <p class="sub">Current endpoint: <strong>{{ api_config.api_url or 'No API configured yet' }}</strong></p>
+        <button type="submit">Fetch API Data & Generate BDO File</button>
+      </form>
+    </section>
+
+    <section id="panel-config" class="panel">
+      <form action="{{ url_for('api_config') }}" method="post">
+        <h2>API Configuration</h2>
+        <label for="api_url">API URL</label>
+        <input id="api_url" name="api_url" type="url" value="{{ api_config.api_url }}" placeholder="https://example.com/api/reimbursements">
+
+        <label for="method">Method</label>
+        <select id="method" name="method">
+          <option value="GET" {% if api_config.method == 'GET' %}selected{% endif %}>GET</option>
+        </select>
+
+        <label for="auth_type">Authentication</label>
+        <select id="auth_type" name="auth_type">
+          <option value="none" {% if api_config.auth_type == 'none' %}selected{% endif %}>None</option>
+          <option value="bearer" {% if api_config.auth_type == 'bearer' %}selected{% endif %}>Bearer Token</option>
+          <option value="basic" {% if api_config.auth_type == 'basic' %}selected{% endif %}>Basic Username/Password</option>
+        </select>
+
+        <label for="bearer_token">Bearer Token</label>
+        <input id="bearer_token" name="bearer_token" type="password" value="{{ api_config.bearer_token }}" placeholder="Only needed for Bearer Token auth">
+
+        <div class="two-col">
+          <div>
+            <label for="basic_username">Basic Username</label>
+            <input id="basic_username" name="basic_username" type="text" value="{{ api_config.basic_username }}">
+          </div>
+          <div>
+            <label for="basic_password">Basic Password</label>
+            <input id="basic_password" name="basic_password" type="password" value="{{ api_config.basic_password }}">
+          </div>
+        </div>
+
+        <label for="json_data_path">JSON Data Path</label>
+        <input id="json_data_path" name="json_data_path" type="text" value="{{ api_config.json_data_path }}" placeholder="Optional. Example: data.items">
+        <p class="hint">Leave blank if the API returns a JSON array. Use this if rows are inside a nested property, such as <code>data.items</code>.</p>
+
+        <label for="custom_headers">Custom Headers</label>
+        <textarea id="custom_headers" name="custom_headers" rows="4" placeholder="x-api-key: your-key&#10;client-id: abc123">{{ api_config.custom_headers }}</textarea>
+        <p class="hint">One header per line using <code>Name: Value</code>.</p>
+
+        <button type="submit">Save API Configuration</button>
+      </form>
+    </section>
+
+    <section>
+      <h2>What this version supports</h2>
+      <ul>
+        <li>CSV, XLSX, and XLSM upload</li>
+        <li>API input using JSON array or CSV response</li>
+        <li>Bearer token, Basic auth, or custom headers</li>
+        <li>Column mapping from reimbursement monitoring format</li>
+        <li>Mandatory field checking</li>
+        <li>Address cleanup and 35-character limit</li>
+        <li>Bank alias cleanup</li>
+        <li>Scientific account number conversion where possible</li>
+      </ul>
+    </section>
+  </main>
+
+  <script>
+    function showPanel(name) {
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active-panel'));
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.getElementById('panel-' + name).classList.add('active-panel');
+      event.target.classList.add('active');
+    }
+  </script>
+</body>
+</html>
