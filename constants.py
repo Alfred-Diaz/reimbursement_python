@@ -2,6 +2,7 @@ import os
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 TEMPLATE_PATH = os.path.join(BASE_DIR, "reference", "bdo_template.xlsm")
+BDO_ACA_TEMPLATE_PATH = os.path.join(BASE_DIR, "reference", "bdo_aca_template.xlsm")
 UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
 OUTPUT_DIR = os.path.join(BASE_DIR, "outputs")
 CONFIG_PATH = os.path.join(BASE_DIR, "api_config.json")
@@ -11,6 +12,18 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 DATA_START_ROW = 12
 TEMPLATE_SHEET = "BOB Outward Payments"
 BANK_CODES_SHEET = "Bank Codes"
+
+BDO_ACA_SHEET = "Converter"
+BDO_ACA_DATA_START_ROW = 9
+BDO_ACA_COLUMNS = [
+    "Account Number",
+    "Reference Number",
+    "Client Transaction Number",
+    "Amount",
+    "Particulars",
+    "Email",
+    "Remarks",
+]
 
 COLUMNS = [
     "Amount", "Type of Beneficiary", "Beneficiary First Name", "Beneficiary Middle Name",
