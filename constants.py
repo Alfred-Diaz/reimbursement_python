@@ -2,7 +2,7 @@ import os
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 TEMPLATE_PATH = os.path.join(BASE_DIR, "reference", "bdo_template.xlsm")
-BDO_ACA_TEMPLATE_PATH = os.path.join(BASE_DIR, "reference", "bdo_aca_template.xlsm")
+BDO_ACA_TEMPLATE_PATH = os.path.join(BASE_DIR, "reference", "BDO_ACA_05.28.2026 1.xlsm")
 UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
 OUTPUT_DIR = os.path.join(BASE_DIR, "outputs")
 CONFIG_PATH = os.path.join(BASE_DIR, "api_config.json")
