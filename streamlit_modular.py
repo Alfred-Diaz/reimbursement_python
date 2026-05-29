@@ -188,9 +188,33 @@ def show_routed_results(cleaned_rows, error_rows, unmatched, outputs):
             st.dataframe(error_rows[:100], use_container_width=True)
 
 
+def persist_results(cleaned_rows, error_rows, unmatched, outputs):
+    st.session_state["last_reimbursement_results"] = {
+        "cleaned_rows": cleaned_rows,
+        "error_rows": error_rows,
+        "unmatched": unmatched,
+        "outputs": outputs,
+    }
+
+
+def render_persisted_results():
+    results = st.session_state.get("last_reimbursement_results")
+    if not results:
+        return
+
+    st.caption("Last processed reimbursement results are still available below.")
+    show_routed_results(
+        results["cleaned_rows"],
+        results["error_rows"],
+        results["unmatched"],
+        results["outputs"],
+    )
+
+
 def process_rows(rows, source_name):
     cleaned_rows, error_rows, unmatched = validate_and_clean(rows)
     outputs = write_routed_outputs(cleaned_rows, error_rows, source_name)
+    persist_results(cleaned_rows, error_rows, unmatched, outputs)
     show_routed_results(cleaned_rows, error_rows, unmatched, outputs)
 
 
@@ -216,21 +240,23 @@ def upload_tab():
             st.error(f"Processing failed: {exc}")
 
 
-def run_api_tab():
-    st.subheader("Run API Import")
-    st.caption("Pull data from the saved API configuration, validate it, and generate BDO and Non-BDO upload files.")
+def reimbursement_upload_tab():
+    st.subheader("Reimbursement Upload")
+    st.caption("Pull reimbursement data from the saved configuration, validate it, and generate BDO and Non-BDO upload files.")
 
     config = load_api_config()
     if not config.get("api_url"):
-        st.warning("API configuration has not been set yet. Please ask an admin to configure it.")
+        st.warning("Reimbursement source has not been configured yet. Please ask an admin to configure it.")
         return
 
-    if st.button("Fetch and Validate API Data", type="primary"):
+    if st.button("Run Reimbursement", type="primary"):
         try:
             rows = fetch_api_rows(config)
-            process_rows(rows, "Configured API")
+            process_rows(rows, "Reimbursement Source")
         except Exception as exc:
-            st.error(f"API processing failed: {exc}")
+            st.error(f"Reimbursement processing failed: {exc}")
+
+    render_persisted_results()
 
 
 def api_config_tab():
@@ -307,21 +333,21 @@ def main():
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
     if is_admin():
-        tab_upload, tab_run_api, tab_api_config = st.tabs(
-            ["Upload File", "Run API", "API Config"]
+        tab_upload, tab_reimbursement, tab_api_config = st.tabs(
+            ["Upload File", "Reimbursement Upload", "API Config"]
         )
         with tab_upload:
             upload_tab()
-        with tab_run_api:
-            run_api_tab()
+        with tab_reimbursement:
+            reimbursement_upload_tab()
         with tab_api_config:
             api_config_tab()
     else:
-        tab_upload, tab_run_api = st.tabs(["Upload File", "Run API"])
+        tab_upload, tab_reimbursement = st.tabs(["Upload File", "Reimbursement Upload"])
         with tab_upload:
             upload_tab()
-        with tab_run_api:
-            run_api_tab()
+        with tab_reimbursement:
+            reimbursement_upload_tab()
 
 
 main()
