@@ -16,6 +16,17 @@ from utils import (
     map_row_keys,
 )
 
+PRESERVE_TEXT_FIELDS = {
+    "Beneficiary Information",
+    "Bank to Bank Information",
+}
+
+
+def preserve_reference_value(value):
+    if value is None:
+        return ""
+    return str(value).strip()
+
 
 def load_bank_names():
     workbook = load_workbook(
@@ -63,6 +74,9 @@ def validate_and_clean(rows):
         )
 
         for field in CLEAN_TEXT_FIELDS:
+            if field in PRESERVE_TEXT_FIELDS:
+                output[field] = preserve_reference_value(output[field])
+                continue
             limit = 35 if field in ADDRESS_FIELDS else None
             output[field] = clean_text(output[field], limit)
 
