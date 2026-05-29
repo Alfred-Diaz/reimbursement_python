@@ -11,6 +11,110 @@ from file_reader import read_input_file
 from validation_engine import validate_and_clean
 
 
+def apply_custom_styles():
+    st.markdown(
+        """
+        <style>
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(150px, 1fr));
+            gap: 1rem;
+            margin: 1.25rem 0 1.75rem 0;
+        }
+        .kpi-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 14px;
+            padding: 1rem 1.1rem;
+            background: #ffffff;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+            min-height: 112px;
+        }
+        .kpi-label {
+            font-size: 0.92rem;
+            color: #475569;
+            font-weight: 600;
+            margin-bottom: 0.45rem;
+        }
+        .kpi-value {
+            font-size: 2.15rem;
+            line-height: 1;
+            font-weight: 750;
+            color: #0f172a;
+        }
+        .kpi-card.total { border-left: 7px solid #2563eb; }
+        .kpi-card.error { border-left: 7px solid #dc2626; }
+        .kpi-card.ready { border-left: 7px solid #16a34a; }
+        .kpi-card.bdo { border-left: 7px solid #7c3aed; }
+        .kpi-card.nonbdo { border-left: 7px solid #ea580c; }
+
+        div.stButton > button[kind="primary"] {
+            background: #dc2626;
+            border: 1px solid #991b1b;
+            color: white;
+            font-weight: 700;
+            border-radius: 10px;
+            padding: 0.65rem 1.15rem;
+        }
+        div.stButton > button[kind="primary"]:hover {
+            background: #b91c1c;
+            border-color: #7f1d1d;
+            color: white;
+        }
+        div.stDownloadButton > button {
+            background: #0f766e;
+            border: 1px solid #115e59;
+            color: white;
+            font-weight: 700;
+            border-radius: 10px;
+            padding: 0.65rem 1.15rem;
+        }
+        div.stDownloadButton > button:hover {
+            background: #115e59;
+            border-color: #134e4a;
+            color: white;
+        }
+        @media (max-width: 1100px) {
+            .kpi-grid { grid-template-columns: repeat(2, minmax(150px, 1fr)); }
+        }
+        @media (max-width: 650px) {
+            .kpi-grid { grid-template-columns: 1fr; }
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def render_kpi_cards(total_rows, error_rows, ready_rows, bdo_rows, non_bdo_rows):
+    st.markdown(
+        f"""
+        <div class="kpi-grid">
+            <div class="kpi-card total">
+                <div class="kpi-label">Total Rows</div>
+                <div class="kpi-value">{total_rows}</div>
+            </div>
+            <div class="kpi-card error">
+                <div class="kpi-label">Rows With Errors</div>
+                <div class="kpi-value">{error_rows}</div>
+            </div>
+            <div class="kpi-card ready">
+                <div class="kpi-label">Ready Rows</div>
+                <div class="kpi-value">{ready_rows}</div>
+            </div>
+            <div class="kpi-card bdo">
+                <div class="kpi-label">BDO Rows</div>
+                <div class="kpi-value">{bdo_rows}</div>
+            </div>
+            <div class="kpi-card nonbdo">
+                <div class="kpi-label">Non-BDO Rows</div>
+                <div class="kpi-value">{non_bdo_rows}</div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 def download_file_button(label, output_path, key):
     with open(output_path, "rb") as file:
         st.download_button(
@@ -42,14 +146,13 @@ def render_output_section(title, row_count, errors, output_path, button_label, b
 def show_routed_results(cleaned_rows, error_rows, unmatched, outputs):
     st.success("Processing complete.")
 
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Total Rows", len(cleaned_rows))
-    col2.metric("Rows With Errors", len(error_rows))
-    col3.metric("Ready Rows", len(cleaned_rows) - len(error_rows))
-
-    route1, route2 = st.columns(2)
-    route1.metric("BDO Rows", outputs.get("bdo_rows", 0))
-    route2.metric("Non-BDO Rows", outputs.get("non_bdo_rows", 0))
+    render_kpi_cards(
+        total_rows=len(cleaned_rows),
+        error_rows=len(error_rows),
+        ready_rows=len(cleaned_rows) - len(error_rows),
+        bdo_rows=outputs.get("bdo_rows", 0),
+        non_bdo_rows=outputs.get("non_bdo_rows", 0),
+    )
 
     if unmatched:
         st.warning("Unmatched input columns: " + ", ".join(unmatched))
@@ -181,6 +284,7 @@ def main():
         page_title="BDO Reimbursement Cleanup",
         layout="wide",
     )
+    apply_custom_styles()
 
     st.title("BDO Reimbursement Cleanup Tool")
     st.write(
