@@ -15,6 +15,21 @@ def get_secret(name, default=""):
         return os.environ.get(name, default)
 
 
+def secrets_configured():
+    admin_password = get_secret("ADMIN_PASSWORD", "")
+    user_password = get_secret("USER_PASSWORD", "")
+    return bool(admin_password and user_password)
+
+
+def using_default_passwords():
+    admin_password = get_secret("ADMIN_PASSWORD", DEFAULT_ADMIN_PASSWORD)
+    user_password = get_secret("USER_PASSWORD", DEFAULT_USER_PASSWORD)
+    return (
+        admin_password == DEFAULT_ADMIN_PASSWORD
+        or user_password == DEFAULT_USER_PASSWORD
+    )
+
+
 def get_users():
     admin_username = get_secret("ADMIN_USERNAME", DEFAULT_ADMIN_USERNAME)
     admin_password = get_secret("ADMIN_PASSWORD", DEFAULT_ADMIN_PASSWORD)
@@ -50,6 +65,16 @@ def login_form():
 
     st.subheader("Login Required")
     st.caption("Use your assigned username and password to access the cleanup tool.")
+
+    if not secrets_configured():
+        st.warning(
+            "Login secrets are not fully configured. Set ADMIN_USERNAME, ADMIN_PASSWORD, USER_USERNAME, and USER_PASSWORD in Streamlit Secrets."
+        )
+
+    if using_default_passwords():
+        st.error(
+            "Default passwords are still active. Change them in Streamlit Secrets before using this app for real data."
+        )
 
     with st.form("login_form"):
         username = st.text_input("Username")
