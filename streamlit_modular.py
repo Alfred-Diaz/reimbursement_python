@@ -5,13 +5,24 @@ import streamlit as st
 
 from api_client import fetch_api_rows, load_api_config, save_api_config
 from auth import is_admin, login_form, logout_button
-from constants import OUTPUT_DIR, TEMPLATE_PATH, UPLOAD_DIR
-from excel_writer import write_clean_output
+from constants import BDO_ACA_TEMPLATE_PATH, OUTPUT_DIR, TEMPLATE_PATH, UPLOAD_DIR
+from export_router import write_routed_outputs
 from file_reader import read_input_file
 from validation_engine import validate_and_clean
 
 
-def show_results(cleaned_rows, error_rows, unmatched, output_path):
+def download_file_button(label, output_path, key):
+    with open(output_path, "rb") as file:
+        st.download_button(
+            label,
+            data=file,
+            file_name=os.path.basename(output_path),
+            mime="application/vnd.ms-excel.sheet.macroEnabled.12",
+            key=key,
+        )
+
+
+def show_routed_results(cleaned_rows, error_rows, unmatched, outputs):
     st.success("Processing complete.")
 
     col1, col2, col3 = st.columns(3)
@@ -19,20 +30,41 @@ def show_results(cleaned_rows, error_rows, unmatched, output_path):
     col2.metric("Rows With Errors", len(error_rows))
     col3.metric("Ready Rows", len(cleaned_rows) - len(error_rows))
 
+    route1, route2 = st.columns(2)
+    route1.metric("BDO Rows", outputs.get("bdo_rows", 0))
+    route2.metric("Non-BDO Rows", outputs.get("non_bdo_rows", 0))
+
     if unmatched:
         st.warning("Unmatched input columns: " + ", ".join(unmatched))
+
+    if outputs.get("non_bdo_output_path"):
+        download_file_button(
+            "Download Non-BDO Upload File",
+            outputs["non_bdo_output_path"],
+            "download_non_bdo",
+        )
+
+    if outputs.get("bdo_output_path"):
+        download_file_button(
+            "Download BDO ACA Upload File",
+            outputs["bdo_output_path"],
+            "download_bdo_aca",
+        )
 
     if error_rows:
         st.subheader("Validation Error Preview")
         st.dataframe(error_rows[:50], use_container_width=True)
 
-    with open(output_path, "rb") as file:
-        st.download_button(
-            "Download Cleaned BDO Upload File",
-            data=file,
-            file_name=os.path.basename(output_path),
-            mime="application/vnd.ms-excel.sheet.macroEnabled.12",
-        )
+    bdo_errors = outputs.get("bdo_errors", [])
+    if bdo_errors:
+        st.subheader("BDO ACA Validation Notes")
+        st.dataframe(bdo_errors[:50], use_container_width=True)
+
+
+def process_rows(rows, source_name):
+    cleaned_rows, error_rows, unmatched = validate_and_clean(rows)
+    outputs = write_routed_outputs(cleaned_rows, error_rows, source_name)
+    show_routed_results(cleaned_rows, error_rows, unmatched, outputs)
 
 
 def upload_tab():
@@ -52,20 +84,14 @@ def upload_tab():
 
         try:
             rows = read_input_file(saved_path)
-            cleaned_rows, error_rows, unmatched = validate_and_clean(rows)
-            output_path = write_clean_output(
-                cleaned_rows,
-                error_rows,
-                uploaded_file.name,
-            )
-            show_results(cleaned_rows, error_rows, unmatched, output_path)
+            process_rows(rows, uploaded_file.name)
         except Exception as exc:
             st.error(f"Processing failed: {exc}")
 
 
 def run_api_tab():
     st.subheader("Run API Import")
-    st.caption("Pull data from the saved API configuration, validate it, and generate the BDO upload file.")
+    st.caption("Pull data from the saved API configuration, validate it, and generate BDO and Non-BDO upload files.")
 
     config = load_api_config()
     if not config.get("api_url"):
@@ -75,13 +101,7 @@ def run_api_tab():
     if st.button("Fetch and Validate API Data", type="primary"):
         try:
             rows = fetch_api_rows(config)
-            cleaned_rows, error_rows, unmatched = validate_and_clean(rows)
-            output_path = write_clean_output(
-                cleaned_rows,
-                error_rows,
-                "Configured API",
-            )
-            show_results(cleaned_rows, error_rows, unmatched, output_path)
+            process_rows(rows, "Configured API")
         except Exception as exc:
             st.error(f"API processing failed: {exc}")
 
@@ -140,7 +160,7 @@ def main():
 
     st.title("BDO Reimbursement Cleanup Tool")
     st.write(
-        "Validate, clean, and export reimbursement data into the required BDO upload template."
+        "Validate, clean, auto-route, and export reimbursement data into BDO and Non-BDO upload templates."
     )
 
     if not login_form():
@@ -151,6 +171,9 @@ def main():
     if not os.path.exists(TEMPLATE_PATH):
         st.error("Missing reference/bdo_template.xlsm in the GitHub repository.")
         return
+
+    if not os.path.exists(BDO_ACA_TEMPLATE_PATH):
+        st.warning("BDO ACA template is not yet available. Upload reference/bdo_aca_template.xlsm to enable BDO output.")
 
     os.makedirs(UPLOAD_DIR, exist_ok=True)
     os.makedirs(OUTPUT_DIR, exist_ok=True)
