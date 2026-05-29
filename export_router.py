@@ -56,6 +56,7 @@ def write_routed_outputs(cleaned_rows, error_rows, original_filename):
         "non_bdo_output_path": None,
         "bdo_errors": bdo_errors,
         "non_bdo_errors": non_bdo_errors,
+        "warnings": [],
     }
 
     if non_bdo_rows:
@@ -66,11 +67,16 @@ def write_routed_outputs(cleaned_rows, error_rows, original_filename):
         )
 
     if bdo_rows:
-        bdo_output_path, bdo_validation_errors = write_bdo_aca_output(
-            bdo_rows,
-            original_filename,
-        )
-        outputs["bdo_output_path"] = bdo_output_path
-        outputs["bdo_errors"] = bdo_errors + bdo_validation_errors
+        try:
+            bdo_output_path, bdo_validation_errors = write_bdo_aca_output(
+                bdo_rows,
+                original_filename,
+            )
+            outputs["bdo_output_path"] = bdo_output_path
+            outputs["bdo_errors"] = bdo_errors + bdo_validation_errors
+        except FileNotFoundError as exc:
+            outputs["warnings"].append(str(exc))
+        except Exception as exc:
+            outputs["warnings"].append(f"BDO ACA output failed: {exc}")
 
     return outputs
